@@ -6,18 +6,22 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <style>
-body{font-family:Segoe UI,sans-serif; margin:0; padding:40px; background:linear-gradient(135deg,#FF7900,#ff8c1a,#ff6600); min-height:100vh; box-sizing:border-box;}
-.container{background:white; max-width:900px; margin:0 auto; padding:40px; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.2);}
-h1{color:#0F172A; font-size:36px; margin:0 0 12px; font-weight:900;}
-.pills{margin-bottom:30px;}
+*{box-sizing:border-box;}
+html,body{height:100%; margin:0;}
+body{font-family:Segoe UI,sans-serif; padding:20px; background:linear-gradient(135deg,#FF7900,#ff8c1a,#ff6600); display:flex; flex-direction:column;}
+.container{background:white; width:100%; flex:1; margin:0; padding:30px 40px; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.2); display:flex; flex-direction:column; overflow:hidden;}
+h1{color:#0F172A; font-size:32px; margin:0 0 10px; font-weight:900;}
+.pills{margin-bottom:20px; flex-shrink:0;}
 .pill{display:inline-block; padding:6px 16px; border-radius:14px; font-size:13px; font-weight:bold; margin-right:6px;}
 .pill-light{background:#F1F5F9; color:#0F172A;}
 .pill-dark{background:#0F172A; color:white;}
 .pill-outline{background:white; color:#0F172A; border:2px solid #0F172A;}
-.label{color:#64748B; font-size:11px; font-weight:bold; letter-spacing:1.5px; margin:24px 0 10px;}
-.formula{background:#F1F5F9; padding:30px; border-radius:12px; min-height:80px; overflow-x:auto; border-left:4px solid #FF7900; display:flex; align-items:center; justify-content:center;}
+.label{color:#64748B; font-size:11px; font-weight:bold; letter-spacing:1.5px; margin:8px 0 8px; flex-shrink:0;}
+.formula-block{flex:1; display:flex; flex-direction:column; min-height:0;}
+.formula{background:#F1F5F9; padding:30px; border-radius:12px; flex:1; overflow:auto; border-left:6px solid #FF7900; display:flex; align-items:center; justify-content:center; font-size:24px;}
 .formula-groupe{border-left-color:#22C55E;}
-.raw{font-family:Consolas,monospace; font-size:11px; color:#94A3B8; margin-top:8px; padding:8px 12px; background:#F8FAFC; border-radius:6px; word-break:break-all;}
+.formula .katex{font-size:1.6em !important;}
+.raw{font-family:Consolas,monospace; font-size:11px; color:#94A3B8; margin-top:6px; padding:6px 12px; background:#F8FAFC; border-radius:6px; word-break:break-all; flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -29,29 +33,29 @@ h1{color:#0F172A; font-size:36px; margin:0 0 12px; font-weight:900;}
     <span class='pill pill-outline' id='techno'></span>
   </div>
   <div class='label'>FORMULE UTILISÉE (SCRIPT PYTHON)</div>
-  <div class='formula' id='used'></div>
-  <div class='raw' id='usedRaw'></div>
+  <div class='formula-block'>
+    <div class='formula' id='used'></div>
+    <div class='raw' id='usedRaw'></div>
+  </div>
   <div class='label'>FORMULE GROUPE OFFICIELLE</div>
-  <div class='formula formula-groupe' id='groupe'></div>
-  <div class='raw' id='groupeRaw'></div>
+  <div class='formula-block'>
+    <div class='formula formula-groupe' id='groupe'></div>
+    <div class='raw' id='groupeRaw'></div>
+  </div>
 </div>
 <script>
 function toLatex(s) {
   if (!s) return '';
-  // Wrap identifiers (variable names) in \text{} to avoid subscript issues
   s = s.replace(/[A-Za-z][A-Za-z0-9_.]*/g, function(m) {
     if (/^\d+$/.test(m)) return m;
     return '\\text{' + m.replace(/_/g, '\\_') + '}';
   });
-  // Replace * with \cdot
   s = s.replace(/\s*\*\s*/g, ' \\cdot ');
-  // Convert (X)/(Y) to fractions, iteratively for nested
   for (let i = 0; i < 10; i++) {
     const ns = s.replace(/\(\s*([^()]+?)\s*\)\s*\/\s*\(\s*([^()]+?)\s*\)/g, '\\dfrac{$1}{$2}');
     if (ns === s) break;
     s = ns;
   }
-  // Simple cases: identifier/identifier or identifier/number
   s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\\text\{[^}]+\})/g, '\\dfrac{$1}{$2}');
   s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\d+(?:\.\d+)?)/g, '\\dfrac{$1}{$2}');
   s = s.replace(/(\d+(?:\.\d+)?)\s*\/\s*(\\text\{[^}]+\})/g, '\\dfrac{$1}{$2}');
@@ -65,8 +69,8 @@ function render() {
   const groupe = p.get('groupe') || '';
   document.getElementById('usedRaw').textContent = used;
   document.getElementById('groupeRaw').textContent = groupe;
-  try { katex.render(toLatex(used), document.getElementById('used'), {throwOnError:false, displayMode:true, fleqn:false}); } catch(e){ document.getElementById('used').textContent = used; }
-  try { katex.render(toLatex(groupe), document.getElementById('groupe'), {throwOnError:false, displayMode:true, fleqn:false}); } catch(e){ document.getElementById('groupe').textContent = groupe; }
+  try { katex.render(toLatex(used), document.getElementById('used'), {throwOnError:false, displayMode:true}); } catch(e){ document.getElementById('used').textContent = used; }
+  try { katex.render(toLatex(groupe), document.getElementById('groupe'), {throwOnError:false, displayMode:true}); } catch(e){ document.getElementById('groupe').textContent = groupe; }
 }
 
 window.addEventListener('DOMContentLoaded', () => {

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset='utf-8'>
+<title>OPTIM KPI Catalog</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+<style>
+body{font-family:Segoe UI,sans-serif; margin:0; padding:40px; background:linear-gradient(135deg,#FF7900,#ff8c1a,#ff6600); min-height:100vh; box-sizing:border-box;}
+.container{background:white; max-width:900px; margin:0 auto; padding:40px; border-radius:20px; box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+h1{color:#0F172A; font-size:36px; margin:0 0 12px; font-weight:900;}
+.pills{margin-bottom:30px;}
+.pill{display:inline-block; padding:6px 16px; border-radius:14px; font-size:13px; font-weight:bold; margin-right:6px;}
+.pill-light{background:#F1F5F9; color:#0F172A;}
+.pill-dark{background:#0F172A; color:white;}
+.pill-outline{background:white; color:#0F172A; border:2px solid #0F172A;}
+.label{color:#64748B; font-size:11px; font-weight:bold; letter-spacing:1.5px; margin:24px 0 10px;}
+.formula{background:#F1F5F9; padding:30px; border-radius:12px; min-height:80px; overflow-x:auto; border-left:4px solid #FF7900; display:flex; align-items:center; justify-content:center;}
+.formula-groupe{border-left-color:#22C55E;}
+.raw{font-family:Consolas,monospace; font-size:11px; color:#94A3B8; margin-top:8px; padding:8px 12px; background:#F8FAFC; border-radius:6px; word-break:break-all;}
+</style>
+</head>
+<body>
+<div class='container'>
+  <h1 id='name'></h1>
+  <div class='pills'>
+    <span class='pill pill-light' id='filiale'></span>
+    <span class='pill pill-dark' id='vendor'></span>
+    <span class='pill pill-outline' id='techno'></span>
+  </div>
+  <div class='label'>FORMULE UTILISÉE (SCRIPT PYTHON)</div>
+  <div class='formula' id='used'></div>
+  <div class='raw' id='usedRaw'></div>
+  <div class='label'>FORMULE GROUPE OFFICIELLE</div>
+  <div class='formula formula-groupe' id='groupe'></div>
+  <div class='raw' id='groupeRaw'></div>
+</div>
+<script>
+function toLatex(s) {
+  if (!s) return '';
+  // Wrap identifiers (variable names) in \text{} to avoid subscript issues
+  s = s.replace(/[A-Za-z][A-Za-z0-9_.]*/g, function(m) {
+    if (/^\d+$/.test(m)) return m;
+    return '\\text{' + m.replace(/_/g, '\\_') + '}';
+  });
+  // Replace * with \cdot
+  s = s.replace(/\s*\*\s*/g, ' \\cdot ');
+  // Convert (X)/(Y) to fractions, iteratively for nested
+  for (let i = 0; i < 10; i++) {
+    const ns = s.replace(/\(\s*([^()]+?)\s*\)\s*\/\s*\(\s*([^()]+?)\s*\)/g, '\\dfrac{$1}{$2}');
+    if (ns === s) break;
+    s = ns;
+  }
+  // Simple cases: identifier/identifier or identifier/number
+  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\\text\{[^}]+\})/g, '\\dfrac{$1}{$2}');
+  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\d+(?:\.\d+)?)/g, '\\dfrac{$1}{$2}');
+  s = s.replace(/(\d+(?:\.\d+)?)\s*\/\s*(\\text\{[^}]+\})/g, '\\dfrac{$1}{$2}');
+  return s;
+}
+
+function render() {
+  if (typeof katex === 'undefined') { setTimeout(render, 100); return; }
+  const p = new URLSearchParams(window.location.search);
+  const used = p.get('used') || '';
+  const groupe = p.get('groupe') || '';
+  document.getElementById('usedRaw').textContent = used;
+  document.getElementById('groupeRaw').textContent = groupe;
+  try { katex.render(toLatex(used), document.getElementById('used'), {throwOnError:false, displayMode:true, fleqn:false}); } catch(e){ document.getElementById('used').textContent = used; }
+  try { katex.render(toLatex(groupe), document.getElementById('groupe'), {throwOnError:false, displayMode:true, fleqn:false}); } catch(e){ document.getElementById('groupe').textContent = groupe; }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(window.location.search);
+  document.title = (p.get('name') || 'KPI') + ' - OPTIM KPI';
+  document.getElementById('name').textContent = p.get('name') || '';
+  document.getElementById('filiale').textContent = p.get('filiale') || '';
+  document.getElementById('vendor').textContent = p.get('vendor') || '';
+  document.getElementById('techno').textContent = p.get('techno') || '';
+  render();
+});
+</script>
+</body>
+</html>

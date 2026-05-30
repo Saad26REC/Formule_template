@@ -17,9 +17,11 @@ h1{color:#0F172A; font-size:28px; margin:0 0 10px; font-weight:900;}
 .pill-dark{background:#0F172A; color:white;}
 .pill-outline{background:white; color:#0F172A; border:2px solid #0F172A;}
 .label{color:#64748B; font-size:11px; font-weight:bold; letter-spacing:1.5px; margin:20px 0 8px;}
-.formula{background:#F1F5F9; padding:16px 20px; border-radius:12px; height:150px; overflow:auto; border-left:6px solid #FF7900;}
+.formula{background:#F1F5F9; padding:16px 20px; border-radius:12px; height:130px; overflow:auto; border-left:6px solid #FF7900; font-size:14px;}
 .formula-groupe{border-left-color:#22C55E;}
-.formula .katex{font-size:0.7em !important;}
+.formula .katex{font-size:0.95em !important;}
+.formula .katex-display{margin:0.3em 0 !important;}
+.formula .katex-display > .katex{font-size:0.95em !important;}
 .formula::-webkit-scrollbar{width:12px; height:12px;}
 .formula::-webkit-scrollbar-track{background:#E2E8F0; border-radius:6px;}
 .formula::-webkit-scrollbar-thumb{background:#FF7900; border-radius:6px; border:2px solid #E2E8F0;}
@@ -54,13 +56,13 @@ function toLatex(s) {
   });
   s = s.replace(/\s*\*\s*/g, ' \\cdot ');
   for (let i = 0; i < 10; i++) {
-    const ns = s.replace(/\(\s*([^()]+?)\s*\)\s*\/\s*\(\s*([^()]+?)\s*\)/g, '\\dfrac{$1}{$2}');
+    const ns = s.replace(/\(\s*([^()]+?)\s*\)\s*\/\s*\(\s*([^()]+?)\s*\)/g, '\\tfrac{$1}{$2}');
     if (ns === s) break;
     s = ns;
   }
-  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\\text\{[^}]+\})/g, '\\dfrac{$1}{$2}');
-  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\d+(?:\.\d+)?)/g, '\\dfrac{$1}{$2}');
-  s = s.replace(/(\d+(?:\.\d+)?)\s*\/\s*(\\text\{[^}]+\})/g, '\\dfrac{$1}{$2}');
+  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\\text\{[^}]+\})/g, '\\tfrac{$1}{$2}');
+  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\d+(?:\.\d+)?)/g, '\\tfrac{$1}{$2}');
+  s = s.replace(/(\d+(?:\.\d+)?)\s*\/\s*(\\text\{[^}]+\})/g, '\\tfrac{$1}{$2}');
   return s;
 }
 

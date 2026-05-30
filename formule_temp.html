@@ -21,7 +21,6 @@ h1{color:#0F172A; font-size:28px; margin:0 0 10px; font-weight:900;}
 .formula-groupe{border-left-color:#22C55E;}
 .formula .katex{font-size:0.95em !important;}
 .formula .katex-display{margin:0.3em 0 !important;}
-.formula .katex-display > .katex{font-size:0.95em !important;}
 .formula::-webkit-scrollbar{width:12px; height:12px;}
 .formula::-webkit-scrollbar-track{background:#E2E8F0; border-radius:6px;}
 .formula::-webkit-scrollbar-thumb{background:#FF7900; border-radius:6px; border:2px solid #E2E8F0;}
@@ -50,19 +49,36 @@ h1{color:#0F172A; font-size:28px; margin:0 0 10px; font-weight:900;}
 <script>
 function toLatex(s) {
   if (!s) return '';
+  
+  // Step 1: Wrap identifiers (with dots/underscores) in \text{}
   s = s.replace(/[A-Za-z][A-Za-z0-9_.]*/g, function(m) {
     if (/^\d+$/.test(m)) return m;
     return '\\text{' + m.replace(/_/g, '\\_') + '}';
   });
+  
+  // Step 2: Replace * with \cdot
   s = s.replace(/\s*\*\s*/g, ' \\cdot ');
+  
+  // Step 3: Handle (X)/(Y) iteratively
   for (let i = 0; i < 10; i++) {
     const ns = s.replace(/\(\s*([^()]+?)\s*\)\s*\/\s*\(\s*([^()]+?)\s*\)/g, '\\tfrac{$1}{$2}');
     if (ns === s) break;
     s = ns;
   }
-  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\\text\{[^}]+\})/g, '\\tfrac{$1}{$2}');
-  s = s.replace(/(\\text\{[^}]+\})\s*\/\s*(\d+(?:\.\d+)?)/g, '\\tfrac{$1}{$2}');
-  s = s.replace(/(\d+(?:\.\d+)?)\s*\/\s*(\\text\{[^}]+\})/g, '\\tfrac{$1}{$2}');
+  
+  // Step 4: Define a "term" = \text{X} optionally followed by (...) for function calls
+  // Patterns: \text{X}, \text{X}(\text{Y}), \text{X}(anything)
+  const TERM = '\\\\text\\{[^}]+\\}(?:\\([^()]*\\))?';
+  
+  // Step 5: Match term/term, term/number, number/term — repeat for chained divisions
+  for (let i = 0; i < 5; i++) {
+    const before = s;
+    s = s.replace(new RegExp('(' + TERM + ')\\s*\\/\\s*(' + TERM + ')', 'g'), '\\tfrac{$1}{$2}');
+    s = s.replace(new RegExp('(' + TERM + ')\\s*\\/\\s*(\\d+(?:\\.\\d+)?)', 'g'), '\\tfrac{$1}{$2}');
+    s = s.replace(new RegExp('(\\d+(?:\\.\\d+)?)\\s*\\/\\s*(' + TERM + ')', 'g'), '\\tfrac{$1}{$2}');
+    if (s === before) break;
+  }
+  
   return s;
 }
 

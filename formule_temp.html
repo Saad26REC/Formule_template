@@ -17,9 +17,9 @@ h1{color:#0F172A; font-size:28px; margin:0 0 10px; font-weight:900;}
 .pill-dark{background:#0F172A; color:white;}
 .pill-outline{background:white; color:#0F172A; border:2px solid #0F172A;}
 .label{color:#64748B; font-size:11px; font-weight:bold; letter-spacing:1.5px; margin:20px 0 8px;}
-.formula{background:#F1F5F9; padding:16px 20px; border-radius:12px; height:130px; overflow:auto; border-left:6px solid #FF7900; font-size:14px;}
+.formula{background:#F1F5F9; padding:16px 20px; border-radius:12px; height:200px; overflow:auto; border-left:6px solid #FF7900; font-size:14px;}
 .formula-groupe{border-left-color:#22C55E;}
-.formula .katex{font-size:0.95em !important;}
+.formula .katex{font-size:0.85em !important;}
 .formula .katex-display{margin:0.3em 0 !important;}
 .formula::-webkit-scrollbar{width:12px; height:12px;}
 .formula::-webkit-scrollbar-track{background:#E2E8F0; border-radius:6px;}
@@ -51,45 +51,52 @@ function toLatex(s) {
   if (!s) return '';
   
   // Step 1: Wrap "Counter (unit)" or "Counter(args)" as ONE \text{} unit
-  // Matches: identifier optionally followed by (simple_content)
   s = s.replace(/([A-Za-z][A-Za-z0-9_.]*)(\s*\([A-Za-z][A-Za-z0-9_.]*\))?/g, function(_, id, paren) {
     const safeId = id.replace(/_/g, '\\_');
     if (paren) {
-      // Extract content between parens, escape underscores
       const content = paren.match(/\(([^)]+)\)/)[1].replace(/_/g, '\\_');
-      const hasSpace = /^\s+\(/.test(paren);
-      const sep = hasSpace ? '\\ ' : '';
+      const sep = /^\s+/.test(paren) ? '\\ ' : '';
       return '\\text{' + safeId + sep + '(' + content + ')}';
     }
     return '\\text{' + safeId + '}';
   });
   
-  // Step 2: Replace * with \cdot
+  // Step 2: Replace \text{...} blocks with placeholders ⟦N⟧
+  // This hides internal parens from subsequent regex matching
+  const ph = [];
+  s = s.replace(/\\text\{[^}]+\}/g, function(m) {
+    ph.push(m);
+    return '⟦' + (ph.length - 1) + '⟧';
+  });
+  
+  // Step 3: Replace * with \cdot
   s = s.replace(/\s*\*\s*/g, ' \\cdot ');
   
-  const TERM = '\\\\text\\{[^}]+\\}';
+  // TERM = placeholder OR number
+  const TERM = '(?:⟦\\d+⟧|\\d+(?:\\.\\d+)?)';
   
-  // Step 3: Handle (X)/(Y) iteratively for grouped fractions
+  // Step 4: (X)/(Y) iteratively — works now because no parens inside placeholders
   for (let i = 0; i < 10; i++) {
     const ns = s.replace(/\(([^()]+?)\)\s*\/\s*\(([^()]+?)\)/g, '\\tfrac{$1}{$2}');
     if (ns === s) break;
     s = ns;
   }
   
-  // Step 4: TERM / (paren_expression)
+  // Step 5: TERM / (paren_expression)
   s = s.replace(new RegExp('(' + TERM + ')\\s*\\/\\s*\\(([^()]+)\\)', 'g'), '\\tfrac{$1}{$2}');
   
-  // Step 5: (paren_expression) / TERM
+  // Step 6: (paren_expression) / TERM
   s = s.replace(new RegExp('\\(([^()]+)\\)\\s*\\/\\s*(' + TERM + ')', 'g'), '\\tfrac{$1}{$2}');
   
-  // Step 6: TERM / TERM, TERM / number, number / TERM
+  // Step 7: TERM / TERM iteratively
   for (let i = 0; i < 5; i++) {
     const before = s;
     s = s.replace(new RegExp('(' + TERM + ')\\s*\\/\\s*(' + TERM + ')', 'g'), '\\tfrac{$1}{$2}');
-    s = s.replace(new RegExp('(' + TERM + ')\\s*\\/\\s*(\\d+(?:\\.\\d+)?)', 'g'), '\\tfrac{$1}{$2}');
-    s = s.replace(new RegExp('(\\d+(?:\\.\\d+)?)\\s*\\/\\s*(' + TERM + ')', 'g'), '\\tfrac{$1}{$2}');
     if (s === before) break;
   }
+  
+  // Step 8: Restore placeholders
+  s = s.replace(/⟦(\d+)⟧/g, function(_, idx) { return ph[parseInt(idx)]; });
   
   return s;
 }
